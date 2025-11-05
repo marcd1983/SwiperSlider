@@ -1,0 +1,6 @@
+---
+Name: swiper-slider
+---
+Elements\SwiperSlider\Model\SlideImage:
+  extensions:
+    - SilverStripe\Versioned\Versioned('Stage','Live')

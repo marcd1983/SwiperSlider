@@ -1,0 +1,11 @@
+﻿/vendor/
+composer.lock
+/.idea/
+/.vscode/
+node_modules/
+dist/
+.DS_Store
+silverstripe-cache/
+/.cache/
+/coverage/
+/phpunit.xml

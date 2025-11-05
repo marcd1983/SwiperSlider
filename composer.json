@@ -1,0 +1,27 @@
+{
+    "name": "antlion/swiper-slider",
+    "description": "Swiper hero slider extension",
+    "license": "BSD-3-Clause",
+    "type": "silverstripe-vendormodule",
+    "keywords": [
+        "silverstripe",
+        "extension",
+        "swiper",
+        "hero"
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Antlion\\SwiperSlider\\": "src/"
+        }
+    },
+    "config": {
+        "process-timeout": 600
+    },
+    "extra": {
+        "expose": [
+            "client"
+        ]
+    }
+}
