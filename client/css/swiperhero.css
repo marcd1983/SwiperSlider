@@ -1,11 +1,13 @@
   .swiper {
       margin-bottom: 1rem;
+      position: relative;
     }
     .swiper-slide {
         background: #f7f7f7;
         display: flex;
         justify-content: center;
         align-items: center;
+        position: relative;
     }
     .swiper-slide img {
         position: relative;
@@ -15,6 +17,10 @@
         display: flex;
         position: absolute;
         width: 100%;
+    }
+    .cover-link {
+    position: absolute; inset: 0;
+    z-index: 1;
     }
     .swiper-overlay {
         position: absolute;
@@ -47,3 +53,18 @@
     .swiper-h-medium { height: 60vh; }
     .swiper-h-tall   { height: 80vh; }
     }
+
+.swiper-button-container{
+    position: absolute;
+    bottom: 8%;
+    right: 2rem;
+    display: flex;
+    gap: 1rem;
+    width: 120px;
+}
+
+.swiper-button-prev, .swiper-button-next{
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 50%;
+}
