@@ -68,3 +68,10 @@
     padding: 10px;
     border-radius: 50%;
 }
+
+
+.swiper-media, .swiper-media > video, .swiper-media > picture,
+.swiper-slide > picture, .swiper-slide > img {
+  width: 100%; height: 700px;
+}
+.swiper-video { width: 100%; height: 100%; object-fit: cover; }
