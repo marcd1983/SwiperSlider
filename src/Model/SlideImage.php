@@ -35,6 +35,7 @@ class SlideImage extends DataObject
         'MediaType'      => 'Enum("image,video","image")',
         'VideoStart'     => 'Int',   // seconds
         'VideoEnd'       => 'Int',   // seconds (0 = full)
+        'HideContentContainer' => 'Boolean',
     ];
 
     private static $has_one = [
