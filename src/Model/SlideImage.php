@@ -9,6 +9,7 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FieldGroup;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\NumericField;
+use TractorCow\Colorpicker\Forms\ColorField;
 use SilverStripe\Forms\DateField;
 use SilverStripe\LinkField\Models\Link;
 use SilverStripe\LinkField\Form\LinkField;
@@ -24,17 +25,19 @@ class SlideImage extends DataObject
     private static $plural_name   = 'Slides';
 
     private static $db = [
-        'Name'           => 'Varchar(255)',
-        'Content'        => 'HTMLText',
-        'Theme'          => 'Enum("light,dark","dark")',
-        'Align'          => 'Enum("center,left,right","left")',
-        'OverlayOpacity' => 'Int',
-        'StartDate'      => 'Date',
-        'EndDate'        => 'Date',
-        'SortOrder'      => 'Int',
-        'MediaType'      => 'Enum("image,video","image")',
-        'VideoStart'     => 'Int',   // seconds
-        'VideoEnd'       => 'Int',   // seconds (0 = full)
+        'Name'                 => 'Varchar(255)',
+        'Content'              => 'HTMLText',
+        'Theme'                => 'Enum("light,dark","dark")',
+        'Align'                => 'Enum("center,left,right","left")',
+        'BackgroundColor'      => 'Varchar(20)',
+        'OverlayColor'         => 'Varchar(20)',
+        'OverlayOpacity'       => 'Int', // 0–100
+        'StartDate'            => 'Date',
+        'EndDate'              => 'Date',
+        'SortOrder'            => 'Int',
+        'MediaType'            => 'Enum("image,video","image")',
+        'VideoStart'           => 'Int',   // seconds
+        'VideoEnd'             => 'Int',   // seconds (0 = full)
         'HideContentContainer' => 'Boolean',
     ];
 
@@ -92,6 +95,8 @@ class SlideImage extends DataObject
             'ParentID',
             'Theme',
             'Align',
+            'BackgroundColor',
+            'OverlayColor',
             'OverlayOpacity',
             'StartDate',
             'EndDate',
@@ -160,8 +165,11 @@ class SlideImage extends DataObject
                     'right'  => 'Right',
                     'center' => 'Center',
                 ]),
+                ColorField::create('BackgroundColor', 'Background color')
+                    ->setDescription('Solid color shown behind the image (fallback)'),
+                ColorField::create('OverlayColor', 'Overlay color'),
                 NumericField::create('OverlayOpacity', 'Overlay opacity (0–100)')
-                    ->setDescription('Typical: 0–70')
+                    ->setDescription('e.g. 35 for 35% opacity')
             )->setName('AppearanceGroup')->addExtraClass('stack')
         );
 
@@ -214,6 +222,18 @@ class SlideImage extends DataObject
     {
         $pct = max(0, min(100, (int)$this->OverlayOpacity));
         return (string) round($pct / 100, 2);
+    }
+
+    public function SlideStyles(): string
+    {
+        $parts = [];
+        if ($this->BackgroundColor) {
+            $parts[] = 'background-color:#' . ltrim((string)$this->BackgroundColor, '#');
+        }
+        if ($this->OverlayColor) {
+            $parts[] = '--overlay-bg:#' . ltrim((string)$this->OverlayColor, '#');
+        }
+        return implode(';', $parts);
     }
 
     public function IsActive(): bool

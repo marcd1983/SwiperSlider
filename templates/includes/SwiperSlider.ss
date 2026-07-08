@@ -81,18 +81,21 @@
         <% end_if %>
 
         <div class="slide-content">
-          <div class="grid-container" style="width: 100%;">
+          <div class="grid-container fluid" style="width: 100%;">
             <div class="grid-x align-middle <% if $Align == 'center' %>align-center<% else_if $Align == 'right' %>align-right<% else %>align-left<% end_if %>">
-              <div class="cell large-9 small-12">
-                <% if $Headline %><h2>$Headline</h2><% end_if %>
-                <% if $Description %><p>$Description</p><% end_if %>
-                $Content
-                <% if $Links.Exists %>
-                  <div class="button-group large <% if $Align == 'center' %>align-center<% else_if $Align == 'right' %>align-right<% else %>align-left<% end_if %>">
-                    <% loop $Links %>
-                      <a class="button $CssClass $ExtraClass" href="$URL" <% if $OpenInNew %>target="_blank" rel="noopener noreferrer"<% end_if %>>$Title.XML</a>
-                    <% end_loop %>
-                  </div>
+              <div class="cell large-6 small-12">
+                <% if $Name || $Content || $Links.Exists %>
+                <div class="<% if not $HideContentContainer %>glass p-60<% end_if %>">
+                  <% if $Name %><h2>$Name</h2><% end_if %>
+                  $Content
+                  <% if $Links.Exists %>
+                    <div class="button-group large <% if $Align == 'center' %>align-center<% else_if $Align == 'right' %>align-right<% else %>align-left<% end_if %>">
+                      <% loop $Links %>
+                        <a class="button $CssClass" href="$URL" <% if $OpenInNew %>target="_blank" rel="noopener noreferrer"<% end_if %>>$Title.XML</a>
+                      <% end_loop %>
+                    </div>
+                  <% end_if %>
+                </div>
                 <% end_if %>
               </div>
             </div>
