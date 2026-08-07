@@ -3,7 +3,6 @@ namespace Antlion\SwiperSlider\Extension;
 
 use Antlion\SwiperSlider\Model\SlideImage;
 use SilverStripe\Core\Extension;
-use SilverStripe\ORM\DataExtension;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FieldGroup;
 use SilverStripe\Forms\NumericField;
@@ -37,6 +36,7 @@ class SwiperSlider extends Extension
         'AutoplayDelay' => 'Int',
         'Lazy'          => 'Boolean',
         'AutoplayProgress' => 'Boolean',
+        'Height'        => "Enum('auto,short,medium,tall,full','medium')",
     ];
 
     private static $has_many = ['Slides' => SlideImage::class];
@@ -51,6 +51,7 @@ class SwiperSlider extends Extension
         $this->owner->Autoplay = true;
         $this->owner->AutoplayDelay = 5000;
         $this->owner->AutoplayProgress = true;
+        $this->owner->Height = 'medium';
     }
 
     public function updateCMSFields(FieldList $fields): void
@@ -70,6 +71,9 @@ class SwiperSlider extends Extension
                 DropdownField::create('Effect', 'Effect', [
                     'slide'=>'Slide','fade'=>'Fade','coverflow'=>'Coverflow','flip'=>'Flip',
                     'cube'=>'Cube','creative'=>'Creative','cards'=>'Cards',
+                ]),
+                DropdownField::create('Height', 'Height', [
+                    'auto'=>'Auto','short'=>'Short','medium'=>'Medium','tall'=>'Tall','full'=>'Full height',
                 ]),
                 CheckboxField::create('Loop', 'Loop'),
                 CheckboxField::create('Pagination', 'Pagination'),

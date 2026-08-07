@@ -11,6 +11,15 @@
     ],
     "minimum-stability": "dev",
     "prefer-stable": true,
+    "require": {
+        "php": "^8.3",
+        "silverstripe/framework": "^6.0",
+        "silverstripe/cms": "^6.0",
+        "silverstripe/assets": "^3.0",
+        "silverstripe/linkfield": "^5.0",
+        "symbiote/silverstripe-gridfieldextensions": "^5.0",
+        "tractorcow/silverstripe-colorpicker": "dev-master"
+    },
     "autoload": {
         "psr-4": {
             "Antlion\\SwiperSlider\\": "src/"
