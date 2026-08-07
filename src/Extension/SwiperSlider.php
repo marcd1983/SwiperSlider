@@ -66,6 +66,20 @@ class SwiperSlider extends Extension
             GridField::create('Slides', 'Slides', $this->owner->Slides(), $cfg)
         );
 
+        $fields->removeByName([
+            'Effect',
+            'Loop',
+            'Speed',
+            'Pagination',
+            'Navigation',
+            'Scrollbar',
+            'Autoplay',
+            'AutoplayDelay',
+            'Lazy',
+            'AutoplayProgress',
+            'Height',
+        ]);
+
         $fields->addFieldToTab('Root.HeroSlider',
             ToggleCompositeField::create('SliderSettings', 'Slider Settings', [
                 DropdownField::create('Effect', 'Effect', [

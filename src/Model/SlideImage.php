@@ -100,9 +100,13 @@ class SlideImage extends DataObject
             'OverlayOpacity',
             'StartDate',
             'EndDate',
-            'CoverLinkID',
+            'CoverLink',
             'VideoStart',
             'VideoEnd',
+            'MediaType',
+            'VideoMP4',
+            'VideoWebM',
+            'VideoPoster',
         ]);
 
         // Media toggle (before image)
