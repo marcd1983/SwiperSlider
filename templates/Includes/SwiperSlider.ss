@@ -85,9 +85,9 @@
           <div class="grid-container fluid" style="width: 100%;">
             <div class="grid-x align-middle <% if $Align == 'center' %>align-center<% else_if $Align == 'right' %>align-right<% else %>align-left<% end_if %>">
               <div class="cell large-6 small-12">
-                <% if $Name || $Content || $Links.Exists %>
+                <% if $Content || $Links.Exists %>
                 <div class="<% if not $HideContentContainer %>glass p-60<% end_if %>">
-                  <% if $Name %><h2>$Name</h2><% end_if %>
+              
                   $Content
                   <% if $Links.Exists %>
                     <div class="button-group large <% if $Align == 'center' %>align-center<% else_if $Align == 'right' %>align-right<% else %>align-left<% end_if %>">

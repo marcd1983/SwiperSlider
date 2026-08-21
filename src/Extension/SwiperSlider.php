@@ -56,6 +56,11 @@ class SwiperSlider extends Extension
 
     public function updateCMSFields(FieldList $fields): void
     {
+        // DataObject::getCMSFields() auto-scaffolds the Slides has_many into
+        // its own "Slides" tab before this runs. We manage that relation
+        // ourselves below inside the HeroSlider tab, so drop the auto tab.
+        $fields->removeFieldFromTab('Root', 'Slides');
+
         if (!$fields->fieldByName('Root.HeroSlider')) {
             $fields->addFieldToTab('Root', Tab::create('HeroSlider'));
         }
