@@ -1,6 +1,7 @@
 <% if $HasSlides %>
   <% require css('antlion/swiper-slider:client/css/swiperhero.css') %>
-<div class="hero swiper" 
+<% cached $ID, $LastEdited, $SlidesActive.Count, $SlidesActive.Max('LastEdited') %>
+<div class="hero swiper"
     id="slider-$ID" 
     data-element-carousel 
     data-swiper='{$getSwiperOptionsJSON.RAW}'
@@ -123,4 +124,5 @@
     <% end_if %>
   <% if $Scrollbar %><div class="swiper-scrollbar"></div><% end_if %>
 </div>
+<% end_cached %>
 <% end_if %>
