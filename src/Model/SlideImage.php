@@ -9,14 +9,17 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FieldGroup;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\NumericField;
-use TractorCow\Colorpicker\Forms\ColorField;
 use SilverStripe\Forms\DateField;
+use SilverStripe\Forms\TextField;
+use SilverStripe\Forms\TextareaField;
+use SilverStripe\Forms\CheckboxField;
 use SilverStripe\LinkField\Models\Link;
 use SilverStripe\LinkField\Form\LinkField;
 use SilverStripe\LinkField\Form\MultiLinkField;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\Core\Validation\ValidationResult;
+use Antlion\SwiperSlider\Elements\ElementSlider;
 
 class SlideImage extends DataObject
 {
@@ -25,20 +28,20 @@ class SlideImage extends DataObject
     private static $plural_name   = 'Slides';
 
     private static $db = [
-        'Name'                 => 'Varchar(255)',
-        'Content'              => 'HTMLText',
-        'Theme'                => 'Enum("light,dark","dark")',
-        'Align'                => 'Enum("center,left,right","left")',
-        'BackgroundColor'      => 'Varchar(20)',
-        'OverlayColor'         => 'Varchar(20)',
-        'OverlayOpacity'       => 'Int', // 0–100
-        'StartDate'            => 'Date',
-        'EndDate'              => 'Date',
-        'SortOrder'            => 'Int',
-        'MediaType'            => 'Enum("image,video","image")',
-        'VideoStart'           => 'Int',   // seconds
-        'VideoEnd'             => 'Int',   // seconds (0 = full)
-        'HideContentContainer' => 'Boolean',
+        'Name'           => 'Varchar(255)',
+        'Headline'       => 'Varchar(255)',
+        'Description'    => 'Text',
+        'Content'        => 'HTMLText',
+        'Theme'          => 'Enum("light,dark","dark")',
+        'Align'          => 'Enum("center,left,right","left")',
+        'OverlayOpacity' => 'Int',
+        'ContentBg'      => 'Boolean',
+        'StartDate'      => 'Date',
+        'EndDate'        => 'Date',
+        'SortOrder'      => 'Int',
+        'MediaType'      => 'Enum("image,video","image")',
+        'VideoStart'     => 'Int',   // seconds
+        'VideoEnd'       => 'Int',   // seconds (0 = full)
     ];
 
     private static $has_one = [
@@ -49,6 +52,7 @@ class SlideImage extends DataObject
         'VideoPoster' => Image::class,
         'Parent'      => SiteTree::class,
         'CoverLink'   => Link::class,
+        'ElementSlider'   => ElementSlider::class,
     ];
 
     private static $has_many = [
@@ -95,19 +99,26 @@ class SlideImage extends DataObject
             'ParentID',
             'Theme',
             'Align',
-            'BackgroundColor',
-            'OverlayColor',
             'OverlayOpacity',
+            'ContentBg',
             'StartDate',
             'EndDate',
-            'CoverLink',
+            'CoverLinkID',
             'VideoStart',
             'VideoEnd',
-            'MediaType',
-            'VideoMP4',
-            'VideoWebM',
-            'VideoPoster',
+            'ElementSlider'
         ]);
+
+        // Headline / description sit above the rich-text Content field
+        $fields->insertBefore(
+            'Content',
+            TextField::create('Headline', 'Headline')
+        );
+        $fields->insertBefore(
+            'Content',
+            TextareaField::create('Description', 'Description')
+                ->setRows(2)
+        );
 
         // Media toggle (before image)
         $fields->insertBefore(
@@ -124,14 +135,14 @@ class SlideImage extends DataObject
             UploadField::create('Image', 'Desktop image')
                 ->setAllowedFileCategories('image/supported')
                 ->setFolderName('swiper/slides')
-                ->setDescription('Optimal 2000×800')
+                ->setDescription('Optimal 1920x700')
                 ->displayIf('MediaType')->isEqualTo('image')->end()
         );
         $fields->replaceField(
             'MobileImage',
             UploadField::create('MobileImage', 'Mobile image')
                 ->setAllowedFileCategories('image/supported')
-                ->setFolderName('swiper/slides') // 🔧 keep folder consistent
+                ->setFolderName('swiper/slides')
                 ->setDescription('Optional; fallback is desktop image. Optimal 960×1024')
                 ->displayIf('MediaType')->isEqualTo('image')->end()
         );
@@ -169,11 +180,10 @@ class SlideImage extends DataObject
                     'right'  => 'Right',
                     'center' => 'Center',
                 ]),
-                ColorField::create('BackgroundColor', 'Background color')
-                    ->setDescription('Solid color shown behind the image (fallback)'),
-                ColorField::create('OverlayColor', 'Overlay color'),
                 NumericField::create('OverlayOpacity', 'Overlay opacity (0–100)')
-                    ->setDescription('e.g. 35 for 35% opacity')
+                    ->setDescription('Typical: 0–70'),
+                CheckboxField::create('ContentBg', 'Add Content Background Overlay')
+                    ->setDescription('Add background for content'),
             )->setName('AppearanceGroup')->addExtraClass('stack')
         );
 
@@ -228,18 +238,6 @@ class SlideImage extends DataObject
         return (string) round($pct / 100, 2);
     }
 
-    public function SlideStyles(): string
-    {
-        $parts = [];
-        if ($this->BackgroundColor) {
-            $parts[] = 'background-color:#' . ltrim((string)$this->BackgroundColor, '#');
-        }
-        if ($this->OverlayColor) {
-            $parts[] = '--overlay-bg:#' . ltrim((string)$this->OverlayColor, '#');
-        }
-        return implode(';', $parts);
-    }
-
     public function IsActive(): bool
     {
         $today = DBDatetime::now()->DateString(); // YYYY-MM-DD
@@ -272,26 +270,28 @@ class SlideImage extends DataObject
     {
         $result = parent::validate();
 
-        // Cover vs Buttons
         if ($this->CoverLinkID && $this->Links()->exists()) {
             $result->addError('Choose either a Cover Link or Buttons, not both.');
         }
 
-        // Minimal media requirements
         if ($this->MediaType === 'image' && !$this->ImageID) {
             $result->addError('Please upload a Desktop image (or switch Media type to Video).');
         }
-        if ($this->MediaType === 'video' && !$this->VideoMP4ID && !$this->VideoWebMID) {
+
+        if ($this->MediaType === 'video'
+            && !$this->VideoMP4ID
+            && !$this->VideoWebMID
+        ) {
             $result->addError('Please upload at least an MP4 or WebM for the video slide.');
         }
 
-        // Clip range sanity
         if ($this->VideoStart && $this->VideoEnd && $this->VideoEnd < $this->VideoStart) {
             $result->addError('Video End must be greater than or equal to Start.');
         }
 
         return $result;
     }
+
 
     // Helpers used by the template
     public function getIsVideo(): bool
@@ -304,5 +304,65 @@ class SlideImage extends DataObject
         return $this->VideoPoster()->exists()
             ? $this->VideoPoster()->Fill(2000, 800)->getURL()
             : null;
+    }
+
+    public function getDesktopImageURL(): string
+    {
+        if (!$this->Image()->exists()) return '';
+        [$w, $h] = $this->resolveDesktopDimensions();
+        return $this->Image()->FocusFill($w, $h)->getURL();
+    }
+
+    public function getMobileImageURL(): string
+    {
+        $img = $this->MobileImage()->exists() ? $this->MobileImage() : $this->Image();
+        if (!$img->exists()) return '';
+        [$w, $h] = $this->resolveMobileDimensions();
+        return $img->FocusFill($w, $h)->getURL();
+    }
+
+    // Dimensions exposed to the template for the <img> width/height attributes
+    public function getDesktopWidth(): int
+    {
+        return $this->resolveDesktopDimensions()[0];
+    }
+
+    public function getDesktopHeight(): int
+    {
+        return $this->resolveDesktopDimensions()[1];
+    }
+
+    public function getMobileWidth(): int
+    {
+        return $this->resolveMobileDimensions()[0];
+    }
+
+    public function getMobileHeight(): int
+    {
+        return $this->resolveMobileDimensions()[1];
+    }
+
+    private function resolveDesktopDimensions(): array
+    {
+        if ($this->ElementSliderID && $this->ElementSlider()->exists()) {
+            $s = $this->ElementSlider();
+            return [(int)($s->DesktopWidth ?: 1920), (int)($s->DesktopHeight ?: 700)];
+        }
+        if ($this->ParentID && ($p = $this->Parent()) && $p->exists()) {
+            return [(int)($p->DesktopWidth ?: 1920), (int)($p->DesktopHeight ?: 700)];
+        }
+        return [1920, 700];
+    }
+
+    private function resolveMobileDimensions(): array
+    {
+        if ($this->ElementSliderID && $this->ElementSlider()->exists()) {
+            $s = $this->ElementSlider();
+            return [(int)($s->MobileWidth ?: 960), (int)($s->MobileHeight ?: 1024)];
+        }
+        if ($this->ParentID && ($p = $this->Parent()) && $p->exists()) {
+            return [(int)($p->MobileWidth ?: 960), (int)($p->MobileHeight ?: 1024)];
+        }
+        return [960, 1024];
     }
 }

@@ -2,30 +2,25 @@
 namespace Antlion\SwiperSlider\Extension;
 
 use Antlion\SwiperSlider\Model\SlideImage;
+use Antlion\SwiperSlider\SwiperConfigProvider;
 use SilverStripe\Core\Extension;
 use SilverStripe\Forms\FieldList;
-use SilverStripe\Forms\FieldGroup;
 use SilverStripe\Forms\NumericField;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\DropdownField;
+use SilverStripe\Forms\FieldGroup;
 use SilverStripe\Forms\ToggleCompositeField;
-use SilverStripe\Forms\LiteralField;
-use SilverStripe\Forms\HeaderField;
-use SilverStripe\Forms\TextField;
-use SilverStripe\View\Requirements;
-use SilverStripe\ORM\DataList;
 use SilverStripe\Forms\Tab;
-use SilverStripe\Forms\TabSet;
-use SilverStripe\Forms\TextareaField;
-use SilverStripe\Forms\TextCheckboxGroupField;
-use SilverStripe\Forms\Field;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig_RelationEditor;
 use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
 
 class SwiperSlider extends Extension
 {
-     private static $db = [
+    use SwiperConfigProvider;
+
+    private static $db = [
+        'Margin'  => "Enum('none,small,medium,large','none')",
         'Effect'        => "Enum('slide,fade,coverflow,flip,cube,creative,cards','slide')",
         'Loop'          => 'Boolean',
         'Speed'         => 'Int',
@@ -36,11 +31,19 @@ class SwiperSlider extends Extension
         'AutoplayDelay' => 'Int',
         'Lazy'          => 'Boolean',
         'AutoplayProgress' => 'Boolean',
-        'Height'        => "Enum('auto,short,medium,tall,full','medium')",
+        'DesktopWidth'  => 'Int',
+        'DesktopHeight' => 'Int',
+        'MobileWidth'   => 'Int',
+        'MobileHeight'  => 'Int',
     ];
 
     private static $has_many = ['Slides' => SlideImage::class];
     private static $owns     = ['Slides'];
+
+    protected function swiperConfigRecord()
+    {
+        return $this->owner;
+    }
 
     public function populateDefaults(): void
     {
@@ -51,48 +54,56 @@ class SwiperSlider extends Extension
         $this->owner->Autoplay = true;
         $this->owner->AutoplayDelay = 5000;
         $this->owner->AutoplayProgress = true;
-        $this->owner->Height = 'medium';
+        $this->owner->DesktopWidth = 1920;
+        $this->owner->DesktopHeight = 700;
+        $this->owner->MobileWidth = 960;
+        $this->owner->MobileHeight = 1024;
     }
 
     public function updateCMSFields(FieldList $fields): void
     {
-        // DataObject::getCMSFields() auto-scaffolds the Slides has_many into
-        // its own "Slides" tab before this runs. We manage that relation
-        // ourselves below inside the HeroSlider tab, so drop the auto tab.
-        $fields->removeFieldFromTab('Root', 'Slides');
-
         if (!$fields->fieldByName('Root.HeroSlider')) {
             $fields->addFieldToTab('Root', Tab::create('HeroSlider'));
         }
 
-        $cfg = GridFieldConfig_RelationEditor::create();
-        $cfg->addComponent(new GridFieldOrderableRows('SortOrder'));
-        $fields->addFieldToTab('Root.HeroSlider',
-            GridField::create('Slides', 'Slides', $this->owner->Slides(), $cfg)
-        );
-
+        // Drop the scaffolded settings fields + the auto Slides tab; we place
+        // our own versions inside Root.HeroSlider below.
         $fields->removeByName([
+            'Margin',
             'Effect',
             'Loop',
             'Speed',
             'Pagination',
             'Navigation',
             'Scrollbar',
+            'Lazy',
             'Autoplay',
             'AutoplayDelay',
-            'Lazy',
             'AutoplayProgress',
-            'Height',
+            'Slides',
+            'DesktopWidth',
+            'DesktopHeight',
+            'MobileWidth',
+            'MobileHeight',
         ]);
 
+        // Slides grid (orderable)
+        $gridConfig = GridFieldConfig_RelationEditor::create();
+        $gridConfig->addComponent(new GridFieldOrderableRows('SortOrder'));
+        $fields->addFieldToTab('Root.HeroSlider', GridField::create(
+            'Slides',
+            'Slides',
+            $this->owner->Slides(),
+            $gridConfig
+        ));
+
+        // Settings
         $fields->addFieldToTab('Root.HeroSlider',
             ToggleCompositeField::create('SliderSettings', 'Slider Settings', [
+                DropdownField::create('Margin',  'Bottom Margin',  $this->spacingOptions()),
                 DropdownField::create('Effect', 'Effect', [
                     'slide'=>'Slide','fade'=>'Fade','coverflow'=>'Coverflow','flip'=>'Flip',
                     'cube'=>'Cube','creative'=>'Creative','cards'=>'Cards',
-                ]),
-                DropdownField::create('Height', 'Height', [
-                    'auto'=>'Auto','short'=>'Short','medium'=>'Medium','tall'=>'Tall','full'=>'Full height',
                 ]),
                 CheckboxField::create('Loop', 'Loop'),
                 CheckboxField::create('Pagination', 'Pagination'),
@@ -103,43 +114,31 @@ class SwiperSlider extends Extension
                 CheckboxField::create('AutoplayProgress', 'Show autoplay progress'),
                 NumericField::create('AutoplayDelay', 'Autoplay delay (ms)'),
                 NumericField::create('Speed', 'Transition speed (ms)'),
+                FieldGroup::create('Desktop dimensions',
+                    NumericField::create('DesktopWidth', 'Width (px)'),
+                    NumericField::create('DesktopHeight', 'Height (px)')
+                )->setName('DesktopDimensions'),
+                FieldGroup::create('Mobile dimensions',
+                    NumericField::create('MobileWidth', 'Width (px)'),
+                    NumericField::create('MobileHeight', 'Height (px)')
+                )->setName('MobileDimensions'),
             ])->setStartClosed(false)
         );
     }
-
-    public function getSwiperOptions(): array
+    private function spacingOptions(): array
     {
-        $o = [
-            'effect' => $this->owner->Effect ?: 'slide',
-            'loop'   => (bool)$this->owner->Loop,
-            'speed'  => (int)($this->owner->Speed ?: 600),
+        return [
+            'none'   => 'None',
+            'small'  => 'Small',
+            'medium' => 'Medium',
+            'large'  => 'Large',
         ];
-        if ($this->owner->Pagination) $o['pagination'] = ['el'=>'.swiper-pagination','clickable'=>true];
-        if ($this->owner->Navigation) $o['navigation'] = ['nextEl'=>'.swiper-button-next','prevEl'=>'.swiper-button-prev'];
-        if ($this->owner->Scrollbar)  $o['scrollbar']  = ['el'=>'.swiper-scrollbar','hide'=>false];
-        if ($this->owner->Autoplay)   $o['autoplay']   = ['delay'=>(int)($this->owner->AutoplayDelay ?: 5000),'disableOnInteraction'=>false,'pauseOnMouseEnter'=>true];
-        if ($this->owner->Lazy) {
-            $o['preloadImages'] = false;
-            $o['lazy'] = ['loadPrevNext'=>true,'loadOnTransitionStart'=>true];
-        }
-        return $o;
     }
 
-    public function getSwiperOptionsJSON(): string
+    public function MarginClasses(): string
     {
-        return json_encode($this->getSwiperOptions(), JSON_UNESCAPED_SLASHES);
-    }
-
-    public function getHasSlides(): bool
-    {
-        $slides = $this->owner->Slides();
-        return $slides && $slides->exists();
-    }
-
-    public function getSlidesActive(): DataList
-    {
-        $list = $this->owner->Slides();
-        if (!$list) return SlideImage::get()->where('1 = 0');
-        return $list->where(SlideImage::activeFilterSQL());
+        return match ($this->owner->Margin) {
+            'small' => 'mb-1', 'medium' => 'mb-2', 'large' => 'mb-3', default => ''
+        };
     }
 }

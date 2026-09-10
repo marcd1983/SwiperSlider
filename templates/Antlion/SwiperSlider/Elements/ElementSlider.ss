@@ -1,7 +1,7 @@
 <% if $HasSlides %>
   <% require css('antlion/swiper-slider:client/css/swiperhero.css') %>
 <% cached $SlidesCacheKey %>
-<div class="hero swiper $MarginClasses"
+<div class="hero swiper"
     id="slider-$ID"
     data-swiper='{$getSwiperOptionsJSON.RAW}'
 >
