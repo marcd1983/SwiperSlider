@@ -59,11 +59,11 @@
 
         <% if $Headline || $Description || $Content || $Links.Exists %>
         <div class="slide-content">
-          <div class="grid-container fluid" style="width: 100%;">
+          <div class="grid-container" style="width: 100%;">
             <div class="grid-x align-middle <% if $Align == 'center' %>align-center<% else_if $Align == 'right' %>align-right<% else %>align-left<% end_if %>">
               <div class="cell large-<% if $Align == 'center' %>12<% else %>6<% end_if %> small-12">
                 <div class="<% if $ContentBg %>glass p-60<% end_if %>">
-                    <% if $Headline %><h2>$Headline</h2><% end_if %>
+                    <% if $Headline %><h1>$Headline</h1><% end_if %>
                     <% if $Description %><p>$Description</p><% end_if %>
                     $Content
                     <% if $Links.Exists %>
